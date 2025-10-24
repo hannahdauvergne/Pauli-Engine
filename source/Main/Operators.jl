@@ -3,7 +3,7 @@ Implementation of the creation and anihilation operator for both fermions and bo
 
 It assumes that the states take the form of a vector ... (explain)
 """
-module Operators_Develop
+module Operators
 export fop_an,fop_cr,bop_an,bop_cr
 
 function fop_an(state::Vector{Int},indx::Int)

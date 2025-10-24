@@ -1,4 +1,4 @@
-include("Main/main.jl")
+include("Main/Main.jl")
 using .Harmonic_Oscillator_solver
 using Plots
 using LaTeXStrings

@@ -65,7 +65,7 @@ function energy_spectrum(
 
         # It calculates what should be th correction for the ground state using the previous energy calculation. 
         # With that, it stimates the value of the itneraction strenght that one should use to obtain the desired value after the correction.
-        # This ensures to have the fina result with almost the same range and intervals of the input grid of glist.
+        # This ensures to have the final result with almost the same range and intervals of the input grid of glist.
         for (k,gtem) in enumerate(gt)
             gcalc[k] = gtem/(1 + gtem * g_c(gtem,E0,sites,particles,only_gc_inv = true))
         end
@@ -125,7 +125,7 @@ function eigenstate!(
     state = system.target_state
     particles = system.system.particles
     sites = system.system.lvls
-    system.params = Internal_params((system.target_state, system.target_g),system.params.target_eigenstate,system.params.target_gcalc,system.params.OBDM)
+    system.params = Internal_params((system.target_state, system.target_g),system.params.target_eigenstate,system.params.target_gcalc,system.params.OBDM,system.params.PCF)
 
     if ndims(g) == 0
         g = [g]
@@ -160,8 +160,8 @@ function eigenstate!(
             gef[k] = g_c(gcal[k],energy,sites,particles,type = "fast")
         end
     end
-    system.params = Internal_params(system.params.prev_params,eigvecs[:,state],system.params.target_gcalc,system.params.OBDM)
-    system.params = Internal_params(system.params.prev_params,system.params.target_eigenstate,gcal,system.params.OBDM)
+    system.params = Internal_params(system.params.prev_params,eigvecs[:,state],system.params.target_gcalc,system.params.OBDM,system.params.PCF)
+    system.params = Internal_params(system.params.prev_params,system.params.target_eigenstate,gcal,system.params.OBDM,system.params.PCF)
 end
 
 """

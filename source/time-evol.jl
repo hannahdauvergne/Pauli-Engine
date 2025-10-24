@@ -1,9 +1,9 @@
-include("Develop/Struct_main.jl")
-using .HO_struct
+include("Main/Main.jl")
+using .Harmonic_Oscillator_solver
 using Plots
 
 particles = [2] 
-system = Few_Particles_Hamonic_Oscillator(particles,15, "bose")
+system = Few_Particles_Hamonic_Oscillator(particles,10, "bose")
 
 np = 101
 gs = range(0.0,15.0,np)

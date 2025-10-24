@@ -34,6 +34,7 @@ struct Internal_params
     target_eigenstate :: Vector{Float64}
     target_gcalc :: Vector{Float64}
     OBDM :: Array{Float64, 3}
+    PCF :: Array{Float64, 6} 
 end
 
 """
@@ -99,7 +100,10 @@ function Few_Particles_Hamonic_Oscillator(
     path = "",
     path_H = "Hamiltonians/",
     save_local = false,
-    id = "default"
+    id = "default",
+    flip_component = false,
+    parity_restriction = false,
+    parity = true
     )
 
     H0 = Vector{SparseMatrixCSC{Float64, Int64}}()
@@ -110,22 +114,50 @@ function Few_Particles_Hamonic_Oscillator(
     target_eigenstate = Vector{Float64}(undef,0)
     target_gcalc = Vector{Float64}()
     OBDM = Array{Float64,3}(undef, 0, 0, 0)
+    PCF = Array{Float64,6}(undef, 0, 0, 0, 0, 0, 0)
 
     if isnothing(lvls)
         lvls = Int(min(100,ceil(50000^(1/sum(particles))))) # Find a good authomatic value. This formula is temporal
         println("using $lvls states")
     end
 
-    if id == "default"
-        id = particletype * "_" * join(string.(particles), "_") * "_nho_" * string(lvls)
+    if flip_component
+        if id == "default"
+            id = particletype * "_" * string(sum(particles)) * "_SOC_nho_" * string(lvls)
+        end
+        particles = sum(particles)
+
+        basis = Dict{Vector{Int}, Int}()
+        for part in 0:particles
+            temp_particles = particles - part
+            temp_basis = basis_creation([temp_particles, part], lvls, particletype)
+            offset = length(basis)
+            temp_dic = Dict(k => v + offset for (k, v) in temp_basis)
+            basis = merge(basis, temp_dic)
+        end
+        particles = [particles,0]
+    elseif parity_restriction
+        if id == "default"
+            if parity
+                id = particletype * "_" * join(string.(particles), "_") *"_nho_" * string(lvls) * "even_parity"
+            else
+                id = particletype * "_" * join(string.(particles), "_") *"_nho_" * string(lvls) * "odd_parity"
+            end
+        end
+        basis = basis_parity(particles, lvls,particletype,parity)
+    else
+        if id == "default"
+            id = particletype * "_" * join(string.(particles), "_") * "_nho_" * string(lvls)
+        end
+
+        basis = basis_creation(particles, lvls,particletype)
     end
 
-    basis = basis_creation(particles, lvls,particletype)
 
     new_system = Few_Particles_Hamonic_Oscillator(
         System(particles,lvls,particletype,basis,id),
         Hamiltonians(H0,HI,Hkin,Hpot),
-        Internal_params(prev_params,target_eigenstate,target_gcalc,OBDM),
+        Internal_params(prev_params,target_eigenstate,target_gcalc,OBDM,PCF),
         glist,numstates,
         target_state,target_g,
         path,path_H,save_local

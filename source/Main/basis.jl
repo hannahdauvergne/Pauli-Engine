@@ -111,3 +111,27 @@ function creationparticle(
 
     return basis, globaliteration
 end
+
+function basis_parity(    
+    particles :: Vector{Int},
+    lvls :: Int,
+    particletype :: String,
+    parity :: Bool
+    )
+
+    basis_t = basis_creation(particles, lvls, particletype)
+
+    deg = length(particles)
+
+    basis = Dict()
+    k_indx = 1
+    for key in keys(basis_t)
+        state_parity = sum(div.(key.-1 ,deg)) % 2
+        if state_parity != parity 
+            basis[key] = k_indx
+            k_indx += 1
+        end
+    end
+
+    return basis
+end

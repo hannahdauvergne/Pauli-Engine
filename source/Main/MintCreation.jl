@@ -2,7 +2,7 @@
 Different functions to compute the matrix elements of the contact interaction.
 We use the "compute_mint_recursive_self_v2 as it reported the best perfomance.
 """
-module MintCreation_Develop
+module MintCreation
 
 export compute_mint, compute_mint_sparse, compute_mint_sparse_v2, compute_mint_recursive_dict,
     compute_mint_recursive_self_if, compute_mint_recursive_self, compute_mint_recursive_self_v2,

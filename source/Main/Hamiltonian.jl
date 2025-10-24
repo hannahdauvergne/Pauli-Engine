@@ -2,8 +2,8 @@ include("Operators.jl")
 include("MintCreation.jl")
 
 
-using .Operators_Develop
-using .MintCreation_Develop
+using .Operators
+using .MintCreation
 
 """ 
     Calculation of a one body Hamiltonian matrix. It supports three options:
