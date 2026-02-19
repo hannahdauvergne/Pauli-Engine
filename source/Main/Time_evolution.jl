@@ -118,6 +118,7 @@ function time_evolution(
     Energy = zeros(steps)
     dens = zeros((steps,1001))
     norm = zeros(steps)
+    fidelity = zeros(steps)
 
     #i=2
     #dt = times[i]-times[i-1]
@@ -161,6 +162,8 @@ function time_evolution(
     Energy[1] = real.(state' * H * state)
     dens[1,:] = density_profile_time(system,state,x=xs)
     norm[1] = sum(abs2.(state))
+    state_init = copy(state)
+    fidelity[1] = abs.(state' * state_init)
 
     for i in 2:steps
         dt = times[i]-times[i-1]
@@ -181,8 +184,9 @@ function time_evolution(
         Energy[i] = real.(state' * H * state)
         dens[i,:] = density_profile_time(system,state,x=xs)
         norm[i] = sum(abs2.(state))
+        fidelity[i] = abs.(state' * state_init)
     end
-    results = (Energy,dens,norm)
+    results = (Energy,dens,norm,fidelity)
     return results
 end
 

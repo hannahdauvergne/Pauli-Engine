@@ -1,17 +1,13 @@
 ###############################################################################
-# Adiabaticity vs runtime sweep
-# Uses ONLY time_evolution (no Hamiltonian, no eigenstates)
+# Load project code and required modules
 ###############################################################################
 
 include("Main/Main.jl")
 using .Harmonic_Oscillator_solver
 using Plots
-using Printf
-using Dates
-
 
 ###############################################################################
-# System definition
+# Define the physical system
 ###############################################################################
 
 particles = [2]
@@ -21,134 +17,73 @@ system = Few_Particles_Hamonic_Oscillator(
     "bose"
 )
 
-
 ###############################################################################
 # Discretization
 ###############################################################################
 
 np = 101   # points per stroke
 
-
 ###############################################################################
-# Forward Pauli-engine protocol
-###############################################################################
-
-function forward_protocol(np)
-    oms1 = range(0.0, 0.0, np); gom1 = range(0.0, 15.0, np)
-    oms2 = range(0.0, 8.0, np); gom2 = range(15.0, 15.0, np)
-    oms3 = range(8.0, 8.0, np); gom3 = range(15.0, 0.0, np)
-    oms4 = range(8.0, 0.0, np); gom4 = range(0.0, 0.0, np)
-
-    gom = [gom1; gom2; gom3; gom4]
-    oms = [oms1; oms2; oms3; oms4]
-
-    return gom, oms
-end
-
-
-###############################################################################
-# Reverse Pauli-engine protocol
+# Control protocol (shape only, time-independent)
 ###############################################################################
 
-function reverse_protocol(np)
-    oms1 = range(0.0, 8.0, np); gom1 = range(0.0, 0.0, np)
-    oms2 = range(8.0, 8.0, np); gom2 = range(0.0, 15.0, np)
-    oms3 = range(8.0, 0.0, np); gom3 = range(15.0, 15.0, np)
-    oms4 = range(0.0, 0.0, np); gom4 = range(15.0, 0.0, np)
+# Stroke 1: increase interaction
+oms1 = range(0.0, 0.0, np)
+gom1 = range(0.0, 15.0, np)
 
-    gom = [gom1; gom2; gom3; gom4]
-    oms = [oms1; oms2; oms3; oms4]
+# Stroke 2: increase trap frequency
+oms2 = range(0.0, 8.0, np)
+gom2 = range(15.0, 15.0, np)
 
-    return gom, oms
-end
+# Stroke 3: decrease interaction
+oms3 = range(8.0, 8.0, np)
+gom3 = range(15.0, 0.0, np)
 
+# Stroke 4: decrease trap frequency
+oms4 = range(8.0, 0.0, np)
+gom4 = range(0.0, 0.0, np)
+
+# Full protocol
+gom = [gom1; gom2; gom3; gom4]
+oms = [oms1; oms2; oms3; oms4]
 
 ###############################################################################
-# Time grid
+# Scan different total cycle times
 ###############################################################################
 
-time_grid(T, np) = range(0.0, T, 4*np)
+Tcycles = range(2000.0, 20000.0, 30)
+final_energy = Float64[]
 
+initial_energy = NaN   # define it first
+final_energy = Float64[]
 
-###############################################################################
-# Runtime sweep
-###############################################################################
+for Tcycle in Tcycles
+    println("Running Tcycle = $Tcycle")
 
-Ts = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4]
+    ts = range(0.0, Tcycle, length(gom))
 
-ΔE_irrev = Float64[]
-walltime = Float64[]
-
-gom_f, oms_f = forward_protocol(np)
-gom_r, oms_r = reverse_protocol(np)
-
-println("Starting sweep at ", now())
-println("------------------------------------------------------")
-
-for T in Ts
-    ts = time_grid(T, np)
-
-    t0 = time()
-
-    ener_f, _, _ = time_evolution(
-        system,
-        gom_f,
-        ts,
-        type="breath",
-        omegas=oms_f
+    enert, denst, normt, fidelityt = time_evolution(
+        system, gom, ts,
+        type="breath", omegas=oms
     )
 
-    ener_r, _, _ = time_evolution(
-        system,
-        gom_r,
-        ts,
-        type="breath",
-        omegas=oms_r
-    )
+    global initial_energy   # tell Julia you mean the global one
+    if isnan(initial_energy)
+        initial_energy = enert[1]
+    end
 
-    t1 = time()
-
-    ΔE = abs(ener_f[end] - ener_r[end])
-
-    push!(ΔE_irrev, ΔE)
-    push!(walltime, t1 - t0)
-
-    @printf(
-        "T = %8.2e | ΔE_irrev = %.5e | runtime = %.2f s\n",
-        T, ΔE, t1 - t0
-    )
+    push!(final_energy, enert[end])
 end
 
-
 ###############################################################################
-# Plots
+# Plot adiabaticity test: final energy vs cycle time
 ###############################################################################
 
-plot(
-    Ts,
-    ΔE_irrev,
-    xscale=:log10,
-    yscale=:log10,
-    marker=:o,
-    xlabel="Total runtime T",
-    ylabel="Cycle irreversibility |ΔE|",
-    title="Adiabaticity vs runtime",
-    legend=false
-)
-savefig("Figs/adiabaticity_vs_runtime.pdf")
+p = plot(Tcycles, final_energy, marker=:o, label="Final energy")
+hline!(p, [initial_energy], linestyle=:dash, label="Initial energy")
 
-plot(
-    Ts,
-    walltime,
-    xscale=:log10,
-    marker=:o,
-    xlabel="Total runtime T",
-    ylabel="Wall-clock time (s)",
-    title="Computational cost",
-    legend=false
-)
-savefig("Figs/runtime_cost.pdf")
+plot!(p, xlabel="Total cycle time",
+         ylabel="Energy",)
 
-
-println("------------------------------------------------------")
-println("Sweep finished. Results saved in Figs/")
+savefig("Figs/adiabaticity_scan_2.pdf")
+display(plot!())
